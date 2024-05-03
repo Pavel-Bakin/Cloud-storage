@@ -1,6 +1,9 @@
 package org.example.cloudstorage.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.example.cloudstorage.model.User;
 import org.example.cloudstorage.model.File;
@@ -18,6 +21,8 @@ import java.util.List;
 @Service
 public class FileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileService.class);
+
     private final UserRepository userRepository;
     private final FileRepository fileRepository;
 
@@ -26,13 +31,15 @@ public class FileService {
         this.fileRepository = fileRepository;
     }
 
+    @Transactional
     public List<File> getFilesByUserId(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("Пользователь с идентификатором не найден: " + userId));
         return fileRepository.findByUserId(user.getId());
     }
 
+    @Transactional
     public void uploadFile(Long userId, MultipartFile multipartFile) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("Пользователь с идентификатором не найден: " + userId));
 
         try {
             // Сохраняем файл на диск
@@ -49,18 +56,21 @@ public class FileService {
             fileEntity.setFilepath(filepath);
             fileEntity.setUserId(userId);
             fileRepository.save(fileEntity);
+
+            logger.info("Файл успешно загружен: {}", filename);
         } catch (IOException e) {
-            throw new FileStorageException("Failed to store file: " + multipartFile.getOriginalFilename(), e);
+            throw new FileStorageException("Не удалось сохранить файл: " + multipartFile.getOriginalFilename(), e);
         }
     }
 
+    @Transactional
     public void deleteFile(Long userId, String fileName) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("Пользователь с идентификатором не найден: " + userId));
 
         // Находим файл по имени и пользователю
         File file = null;
         try {
-            file = fileRepository.findByFilenameAndUserId(fileName, userId).orElseThrow(() -> new FileNotFoundException("File not found: " + fileName));
+            file = fileRepository.findByFilenameAndUserId(fileName, userId).orElseThrow(() -> new FileNotFoundException("Файл не найден: " + fileName));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -69,9 +79,9 @@ public class FileService {
         fileRepository.delete(file);
         java.io.File fileOnDisk = new java.io.File(file.getFilepath());
         if (fileOnDisk.delete()) {
-            System.out.println("File deleted successfully");
+            logger.info("Файл успешно удален: {}", fileName);
         } else {
-            System.out.println("Failed to delete the file");
+            logger.error("Не удалось удалить файл: {}", fileName);
         }
     }
 }

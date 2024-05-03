@@ -1,5 +1,6 @@
 package org.example.cloudstorage.security;
 
+import org.example.cloudstorage.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private PasswordEncoder passwordEncoder;
 
     @Lazy
+    @Autowired
+    private UserService userService;
+
+    @Lazy
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -27,17 +32,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/public/**").permitAll() // Разрешаем доступ к открытым ресурсам
-                .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
+                .antMatchers("/public/**").permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
-                .permitAll(); // Разрешить всем доступ к странице входа и обработке входа по умолчанию
+                .permitAll();
     }
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
-                .inMemoryAuthentication()
-                .withUser("Pavel").password(passwordEncoder.encode("12345")).roles("USER"); // Учетные данные пользователя
+                .userDetailsService(userService)
+                .passwordEncoder(passwordEncoder);
     }
 }

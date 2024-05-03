@@ -12,7 +12,6 @@ public class User {
     private String username;
     private String password;
 
-    // Добавим методы для управления паролем пользователя
     public void setPassword(String password) {
         this.password = password;
     }
@@ -21,7 +20,6 @@ public class User {
         return this.password;
     }
 
-    // Добавим методы для управления идентификатором пользователя
     public Long getId() {
         return this.id;
     }
@@ -30,7 +28,6 @@ public class User {
         this.id = id;
     }
 
-    // Добавим методы для управления именем пользователя
     public String getUsername() {
         return this.username;
     }
